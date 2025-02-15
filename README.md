@@ -156,6 +156,8 @@ Now we will map our newly aggregated snow depth data so we can see the stations 
 
 ![Snow Depth Map](https://github.com/JColalillo/Spatial-Analysis-Final/blob/main/Snow_Depth_Points_Map_Fixed.png?raw=true)
 
+# Inverse Distance Weighting
+
 Now that we have those mapped out we can begin our analysis through Inverse Distance Weighted Interpolation. This is a spatial interpolation technique which can estimate the values across the entire province by using the data at the points of each station. It assumes closer points will have a greater effect on the prediction than those further away. The weighting of each point will decrease as the distance to an unknown area grows. IDW is calculated by using a weighted average of close points using this equation. In this case a 10km grid resolution was used, then we applied the IDW algorithm and generated a raster map where values can be assigned to each cell in the grid. 
 
 ![IDW Equation](https://github.com/user-attachments/assets/2a05ac2b-fb49-444d-b08a-d67511228506)
@@ -262,7 +264,6 @@ ggsave("IDW_SnowDepth_Final.png", plot = snow_depth_map, width = 10, height = 8,
 
 cat("\nIDW Snow Depth Map Created\n")
 ```
-# IDW Output Map
 
 The map below provides the estimated snow depth across the entire province through a continuous representation. The areas which are estimated to receieve more snow are in yellow & orange and the lesser areas in purple.
 
