@@ -42,6 +42,7 @@ install.packages("RANN")
 install.packages("spatstat.explore")
 install.packages("spdep")
 install.packages("MASS")
+install.packages("spgwr")
 
 # Install BC Map (from GitHub)
 remotes::install_github("bcgov/bcmaps")  
@@ -67,6 +68,7 @@ library(RANN)
 library(spatstat.explore)
 library(spdep)
 library(MASS) 
+library(spgwr)
 
 # Set Project Directory
 setwd("C:/Users/admin/Desktop/Project/FinalProject/")
@@ -744,9 +746,115 @@ print(morans_plot)
 cat("\nMoran’s I Test Results:\n")
 print(morans_table)
 ```
+![Morans I Tests](https://github.com/JColalillo/Spatial-Analysis-Final/blob/main/Morans%20I%20Results.png?raw=true)
+
 We can now interpret our results and look for SAC. If SAC is present then our OLS will not be useful and we can try GWR to look for correlation. We used 2 different tests for our Morans I, Queens and Monte Carlo. Queens test defines neighbors using corners and checks all adjacent spatial units are considered neighbours. The monte carlo test generates random versions of the data and calculates Morans I value for each. Unfortunately our OLS appears to show significant clustering as we have a positive Morans I value of .63339, the variance is low and our p - value is extremely small which tells us this is statistically significant. Therefore the OLS residuals are not helpful for the correlation of snow depth and wildfire density. In our Histogram you can see the distribution of simulated values. The red dotted line tells us the location of the actual Morans I value vs our simulated values. Since it is far right it shows strong positive SAC.
 
-![Morans I Tests](https://github.com/JColalillo/Spatial-Analysis-Final/blob/main/Morans%20I%20Results.png?raw=true)
 ![Morans I Histogram](https://github.com/JColalillo/Spatial-Analysis-Final/blob/main/MoransI_Histogram_Improved.png?raw=true)
+
+#Geographic Weight Regression (GWR)
+BLAH BLAH BLAH
+```
+#Loads shapefile
+final_data_sf <- st_read("final_data.shp")
+bc_boundary <- st_read("BC_Boundary.shp")  
+
+# Converts to Spatial format
+final_data_sp <- as(final_data_sf, "Spatial")
+
+# Define variables
+dependent_var <- final_data_sp@data$fires
+independent_vars <- final_data_sp@data$snow_depth
+
+valid_data <- complete.cases(dependent_var, independent_vars)
+final_data_sp <- final_data_sp[valid_data, ]
+
+# Check If Data Exists After Cleaning
+if (nrow(final_data_sp) == 0) {
+  stop("Check your data")
+}
+
+#use adaptive bandwidth instead of constant
+adaptive_bandwidth <- tryCatch({
+  gwr.sel(dependent_var ~ independent_vars, data = final_data_sp)
+}, error = function(e) {
+  message("GWR Failed")
+  return(100000)  
+})
+
+#Run the GWR Model
+gwr_model <- gwr(dependent_var ~ independent_vars, 
+                 data = final_data_sp, 
+                 bandwidth = adaptive_bandwidth, 
+                 se.fit = TRUE, 
+                 hatmatrix = TRUE)
+
+#Extract & Process GWR
+gwr_results <- as.data.frame(gwr_model$SDF)
+gwr_results$p_value <- 2 * (1 - pnorm(abs(gwr_results$independent_vars / gwr_results$independent_vars_se)))
+gwr_results$significant <- gwr_results$p_value < 0.05
+
+#Compute statistical significance
+final_data_sf$GWR_Coefficient <- gwr_results$independent_vars
+final_data_sf$p_value <- gwr_results$p_value
+final_data_sf$significant <- gwr_results$significant
+
+#Keep significant results and clip
+gwr_filtered_sf <- final_data_sf[final_data_sf$significant, ]
+gwr_clipped <- st_intersection(gwr_filtered_sf, bc_boundary)
+
+#Create Map with Clearer Text
+gwr_map <- ggplot() +
+  geom_sf(data = gwr_clipped, aes(fill = GWR_Coefficient), color = NA, alpha = 0.8) +
+  geom_sf(data = bc_boundary, fill = NA, color = "white", size = 0.5) +
+  scale_fill_viridis_c(option = "C", name = "GWR Coefficient") +
+  labs(title = "GWR Coefficients: Snow Depth vs. Fire Density",
+       subtitle = "Filtered by p-value < 0.05",
+       x = "Longitude", y = "Latitude") +
+  theme_minimal(base_size = 16) + 
+  theme(
+    legend.position = "right",
+    plot.title = element_text(face = "bold", size = 18, color = "white"),  
+    plot.subtitle = element_text(size = 14, color = "white"),  
+    axis.title = element_text(size = 14, color = "white"),  
+    axis.text = element_text(size = 12, color = "white"),  
+    legend.text = element_text(size = 12, color = "white"),  
+    legend.title = element_text(size = 14, face = "bold", color = "white"),  
+    panel.background = element_rect(fill = "black"),  
+    plot.background = element_rect(fill = "black")  
+  )
+
+ggsave("GWR_Map.png", plot = gwr_map, width = 12, height = 9, dpi = 300, bg = "black")
+
+#Create Summary Table
+gwr_summary <- data.frame(
+  Mean_Coefficient = mean(final_data_sf$GWR_Coefficient, na.rm = TRUE),
+  Median_Coefficient = median(final_data_sf$GWR_Coefficient, na.rm = TRUE),
+  Min_Coefficient = min(final_data_sf$GWR_Coefficient, na.rm = TRUE),
+  Max_Coefficient = max(final_data_sf$GWR_Coefficient, na.rm = TRUE),
+  Significant_Observations = sum(final_data_sf$significant, na.rm = TRUE)
+)
+
+# Save the Summary as a Table
+gwr_table <- gwr_summary %>%
+  gt() %>%
+  tab_header(
+    title = "GWR Model Summary",
+    subtitle = "Statistical Summary of Snow Depth vs. Fire Density"
+  ) %>%
+  cols_label(
+    Mean_Coefficient = "Mean Coefficient",
+    Median_Coefficient = "Median Coefficient",
+    Min_Coefficient = "Minimum",
+    Max_Coefficient = "Maximum",
+    Significant_Observations = "Significant Observations"
+  ) %>%
+  fmt_number(columns = everything(), decimals = 4)
+
+# Save Table as an Image
+gtsave(gwr_table, "GWR_Model_Summary.png")
+```
+![GWR Map](https://github.com/JColalillo/Spatial-Analysis-Final/blob/main/GWR_Map.png?raw=true)
+![GWR Table](https://github.com/JColalillo/Spatial-Analysis-Final/blob/main/GWR_Model_Summary.png?raw=true)
 
 
