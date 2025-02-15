@@ -1,0 +1,29 @@
+---
+title: "Geog 418 Final Project"
+author: "James Colalilo"
+date: "2025-02-14"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+#Introduction
+As climate change increases in severity so does the occurrence of natural disasters(Vernick,2025). In the Canadian context due to high amounts of fuel from our forests and landscapes we are at increasing risk of wildfire, and as recently as 2023 British Columbia experienced its worst fire year ever (“2023 Is Now Officially the Most Expensive, Most Destructive Wildfire Season on Record in B.C.,” 2023). We can use indicators from our climate to make predictions about upcoming wildfire seasons. In this project we will examine snow depth patterns and look for correlation to wildfire density. Snow accumulation measured by depth in centimeters can impact soil moisture, vegetation growth and in turn fuel amounts, which can in turn influence wildfire potential (Westerling et al, 2006). In this tutorial we will be examining the hypothesis that larger snow depth in the preceding winter will result in lower fire density in the following summer. 
+
+According to Holden et al more snow accumulation can delay the onset of spring and therefore shorten the fire season (2018). The inverse being true in years where there is less snow accumulation and spring begins earlier, it also allows vegetation to dry out more quickly and increase fuel amounts.(Holden et al, 2018). Using R we will go through different statistical and spatial analyses to look for correlation in this relationship. By the end of this file the user will be able to conduct data cleaning and aggregation, descriptive statistics, inferential statistics, point pattern analysis, spatial autocorrelation & interpolation and geographically weighted regression. The user will output multiple figures including tables, maps and charts.
+
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
