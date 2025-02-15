@@ -753,7 +753,8 @@ We can now interpret our results and look for SAC. If SAC is present then our OL
 
 ![Morans I Histogram](https://github.com/JColalillo/Spatial-Analysis-Final/blob/main/MoransI_Histogram_Improved.png?raw=true)
 
-#Geographic Weight Regression (GWR)
+# Geographic Weight Regression (GWR)
+
 GWR is used to model local relationships unlike OLS which models globally. GWR uses variable coeffecients across the locations. It gives weight to data depending on how close they are to each other. It also is good at looking at the differences regionally. When interpreting how this applies to our study a negative coefficient in high snow depth area indicates there should be fewer fires. A positive coefficient indicates other variables may be more important when predicting wildfire density. A neutral value indicates little to no correlation between the two. The patterns may vary area to area meaning the model could work in some regions but not in others. We use the following code to find the results. 
 
 ```
