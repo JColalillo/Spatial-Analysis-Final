@@ -753,7 +753,8 @@ We can now interpret our results and look for SAC. If SAC is present then our OL
 ![Morans I Histogram](https://github.com/JColalillo/Spatial-Analysis-Final/blob/main/MoransI_Histogram_Improved.png?raw=true)
 
 #Geographic Weight Regression (GWR)
-BLAH BLAH BLAH
+GWR is used to model local relationships unlike OLS which models globally. GWR uses variable coeffecients across the locations. It gives weight to data depending on how close they are to each other. It also is good at looking at the differences regionally. When interpreting how this applies to our study a negative coefficient in high snow depth area indicates there should be fewer fires. A positive coefficient indicates other variables may be more important when predicting wildfire density. A neutral value indicates little to no correlation between the two. The patterns may vary area to area meaning the model could work in some regions but not in others. We use the following code to find the results. 
+
 ```
 #Loads shapefile
 final_data_sf <- st_read("final_data.shp")
@@ -854,7 +855,13 @@ gwr_table <- gwr_summary %>%
 # Save Table as an Image
 gtsave(gwr_table, "GWR_Model_Summary.png")
 ```
-![GWR Map](https://github.com/JColalillo/Spatial-Analysis-Final/blob/main/GWR_Map.png?raw=true)
+Now lets look at our outputs, we have produced both a table and a map. When examing our table, our negative mean coefficient shows a negative relationship which means we can say that increased snow depth does lead to lower wildfire density however the median being 0 means more often than not the relationship is non existent. But since GWR excels at local interpretations, we can determine through  a minimum coefficient of - 7 that there are some regions where snow depth does have a strong impact on lowering wildfire density. Our maximum value of 4.4 can also tell us that in certain regions such as the center of the province other factors may be more important in determining density. Unfortunately all we can discern as a whole is that while snow depth does impact wildfire density the relationship is not consistent across the province and other variables would need to be considered to create a more accurate model. 
 ![GWR Table](https://github.com/JColalillo/Spatial-Analysis-Final/blob/main/GWR_Model_Summary.png?raw=true)
+
+
+![GWR Map](https://github.com/JColalillo/Spatial-Analysis-Final/blob/main/GWR_Map.png?raw=true)
+
+While this study is a useful tool to learn how to conduct spatial analysis in R the project itself did have shortcomings. Only using 1 variable to look for correlation of an event like wildfires is not sufficient. There are too many factors at play when determining wildfire density and by not incorporating other climate data, population density, average number of lightning storms and much more we cannot paint a complete picture to predict future wildfires. Another issue with our study was due to difficulties with PCIC website we were only able to acquire data from a single year and from the BC Hydro weather stations. These stations are quite clustered and do not cover the entirety of the province. Therefore it is hard to complete accurate continous surface's of the climate data across the province when its being extrapolated upon from very localized areas.
+
 
 
