@@ -650,5 +650,103 @@ residuals_map <- ggplot() +
 # Save the Residuals Map
 ggsave("Residuals_Map.png", plot = residuals_map, width = 10, height = 8, dpi = 300, bg = "black")
 ```
-Now lets interpret the results of our output. 
+Now lets interpret the results of our output. The yellow areas of our map show where there were high values of snowfall but large quantities of fires still occurred. The purple showed areas where the model worked as intended. It is hard to determine whether or not our model gives much insight into the predicting of wildfire density. It is likely that snow depth on its own cannot be a predictor for wildfire density and other climate measures must be considered.
+
+![OLS Map](https://github.com/JColalillo/Spatial-Analysis-Final/blob/main/Residuals_Map.png?raw=true)
+
+In order to make sure our OLS is relevant we need to determine if there is clustering as OLS works by assuming any errors are random. We can check for this by performing a Morans I test which will look for Spatial Autocorrelation (SAC). We will expand on our OLS using this code which calculates the Morans I
+
+```
+# Check Projection
+target_crs <- 3005
+if (st_crs(final_data_sf) != target_crs) {
+  final_data_sf <- st_transform(final_data_sf, crs = target_crs)
+}
+
+# Remove any NA residuals
+final_data_sf <- final_data_sf %>% filter(!is.na(residuals))
+
+# Convert to spdep format
+final_data_sp <- as(final_data_sf, "Spatial")  # Converts sf to sp format
+
+# Spatial Matrix (Queens)
+coords <- coordinates(final_data_sp)  # Extract coordinates
+nb <- poly2nb(final_data_sp, queen = TRUE)  # Queen Neighbors
+lw <- nb2listw(nb, style = "W", zero.policy = TRUE)  # Row-standardized weights
+
+# Calculate Global Moran's I
+morans_test <- moran.test(final_data_sp$residuals, lw, zero.policy = TRUE)
+
+# Monte Carlo Test
+morans_perm <- moran.mc(final_data_sp$residuals, lw, nsim = 999, zero.policy = TRUE)
+
+# Convert p-value to readable format
+formatted_p_value <- formatC(morans_perm$p.value, format = "e", digits = 2)
+
+# Store results in a table
+morans_table <- data.frame(
+  Statistic = c("Moran's I", "Expectation", "Variance", "Z-Score", "Monte Carlo p-value"),
+  Value = c(
+    round(morans_test$estimate["Moran I statistic"], 5),
+    round(morans_test$estimate["Expectation"], 5),
+    round(morans_test$estimate["Variance"], 5),
+    round(morans_test$statistic, 5),
+    formatted_p_value
+  )
+)
+
+# Display results
+morans_table %>%
+  gt() %>%
+  tab_header(
+    title = "Moran’s I Test Results",
+    subtitle = "Spatial Autocorrelation Analysis"
+  ) %>%
+  cols_label(
+    Statistic = "Statistic",
+    Value = "Value"
+  ) %>%
+  fmt_number(columns = 2, decimals = 5) %>%
+  tab_options(
+    table.width = px(600)
+  )
+
+#Morans I Histogram
+morans_plot <- ggplot(data = data.frame(I = morans_perm$res)) +
+  geom_histogram(aes(x = I), bins = 30, fill = "dodgerblue", color = "black", alpha = 0.8) +
+  geom_vline(xintercept = morans_perm$statistic, color = "red", linetype = "dashed", linewidth = 1.5) +
+  labs(
+    title = "Moran’s I Simulation: Residuals from OLS Regression",
+    subtitle = "Monte Carlo Permutation Test (999 Simulations)",
+    x = "Simulated Moran’s I Value",
+    y = "Frequency"
+  ) +
+  theme_minimal(base_size = 14) +
+  theme(
+    plot.title = element_text(face = "bold", size = 18, color = "white"),
+    plot.subtitle = element_text(size = 14, color = "white"),
+    axis.title = element_text(size = 14, color = "white"),
+    axis.text = element_text(size = 12, color = "white"),
+    legend.text = element_text(size = 12, color = "white"),
+    panel.background = element_rect(fill = "black"),
+    plot.background = element_rect(fill = "black"),
+    panel.grid.major = element_line(color = "gray50"),
+    panel.grid.minor = element_blank()
+  )
+
+# Save Histogram
+ggsave("MoransI_Histogram_Improved.png", plot = morans_plot, width = 10, height = 8, dpi = 300, bg = "black")
+
+# Display plot
+print(morans_plot)
+
+# Print Table in Console
+cat("\nMoran’s I Test Results:\n")
+print(morans_table)
+```
+We can now interpret our results and look for SAC. If SAC is present then our OLS will not be useful and we can try GWR to look for correlation. We used 2 different tests for our Morans I, Queens and Monte Carlo. Queens test defines neighbors using corners and checks all adjacent spatial units are considered neighbours. The monte carlo test generates random versions of the data and calculates Morans I value for each. Unfortunately our OLS appears to show significant clustering as we have a positive Morans I value of .63339, the variance is low and our p - value is extremely small which tells us this is statistically significant. Therefore the OLS residuals are not helpful for the correlation of snow depth and wildfire density. In our Histogram you can see the distribution of simulated values. The red dotted line tells us the location of the actual Morans I value vs our simulated values. Since it is far right it shows strong positive SAC.
+
+![Morans I Tests](https://github.com/JColalillo/Spatial-Analysis-Final/blob/main/Morans%20I%20Results.png?raw=true)
+![Morans I Histogram](https://github.com/JColalillo/Spatial-Analysis-Final/blob/main/MoransI_Histogram_Improved.png?raw=true)
+
 
