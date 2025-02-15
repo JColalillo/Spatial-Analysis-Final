@@ -861,6 +861,8 @@ Now lets look at our outputs, we have produced both a table and a map. When exam
 
 ![GWR Map](https://github.com/JColalillo/Spatial-Analysis-Final/blob/main/GWR_Map.png?raw=true)
 
+# Shortcomings of the study
+
 While this study is a useful tool to learn how to conduct spatial analysis in R the project itself did have shortcomings. Only using 1 variable to look for correlation of an event like wildfires is not sufficient. There are too many factors at play when determining wildfire density and by not incorporating other climate data, population density, average number of lightning storms and much more we cannot paint a complete picture to predict future wildfires. Another issue with our study was due to difficulties with PCIC website we were only able to acquire data from a single year and from the BC Hydro weather stations. These stations are quite clustered and do not cover the entirety of the province. Therefore it is hard to complete accurate continous surface's of the climate data across the province when its being extrapolated upon from very localized areas.
 
 
