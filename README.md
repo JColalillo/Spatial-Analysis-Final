@@ -353,7 +353,8 @@ We can now interpret our output tables to look for trends within the size of the
 ![Descriptive Statistics on Wildfire Size](https://github.com/JColalillo/Spatial-Analysis-Final/blob/main/WildfireTable1.png?raw=true)
 ![Descriptive Statistics on Wildfire Size](https://github.com/JColalillo/Spatial-Analysis-Final/blob/main/WildfireTable2.png?raw=true)
 
-#Mapping Our Fire Events
+# Mapping Our Fire Events
+
 In this section we will map our wildfire events so we can see their distribution across the province. As you can see from the map below the entire province is subject to risk of wildfire but there is a higher frequency as you move east in the province.
 ```
 # Load Wildfire Points Data
