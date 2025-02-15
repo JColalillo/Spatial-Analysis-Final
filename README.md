@@ -156,7 +156,8 @@ Now we will map our newly aggregated snow depth data so we can see the stations 
 
 Now that we have those mapped out we can begin our analysis through Inverse Distance Weighted Interpolation. This is a spatial interpolation technique which can estimate the values across the entire province by using the data at the points of each station. It assumes closer points will have a greater effect on the prediction than those further away. The weighting of each point will decrease as the distance to an unknown area grows. IDW is calculated by using a weighted average of close points using this equation
 
-![IDW Equation](![image](https://github.com/user-attachments/assets/2a05ac2b-fb49-444d-b08a-d67511228506)
+![IDW Equation](https://github.com/user-attachments/assets/2a05ac2b-fb49-444d-b08a-d67511228506)
+
 ```
 # Load Data
 snow_points <- st_read("Cleaned_SnowDepth_Stations.shp")
@@ -259,7 +260,137 @@ ggsave("IDW_SnowDepth_Final.png", plot = snow_depth_map, width = 10, height = 8,
 
 cat("\nIDW Snow Depth Map Created\n")
 ```
-#IDW Output Map
+# IDW Output Map
+
 The map below provides the estimated snow depth across the entire province through a continuous representation. The areas which are estimated to receieve more snow are in yellow & orange and the lesser areas in purple.
 
 ![IDW Map of Estimated Snow Accumulations in British Columbia 2023](https://github.com/JColalillo/Spatial-Analysis-Final/blob/main/IDW_SnowDepth_Final.png?raw=true)
+
+# Descriptive Statistics
+Now we will look at our event data which is the 2024 British Columbia wildfire data. It is stored in a shapefile with multiple fields that will allow us to calculate descriptive statistics and interpret the data. In this case will examine the size of the fires which is measured by the hectare.
+
+```
+# File Path
+wildfire_shapefile <- "C_FIRE_PNT_point.shp"
+
+# Load Shapefile
+wildfire_data <- st_read(wildfire_shapefile)
+
+# Displays all column names
+print(colnames(wildfire_data))  # Displays all column names
+
+# Convert SIZE_HA to Numeric
+wildfire_data$SIZE_HA <- as.numeric(wildfire_data$SIZE_HA)
+
+# Remove NAs
+wildfire_data <- wildfire_data[!is.na(wildfire_data$SIZE_HA), ]
+
+# Caculate table 1 stats
+basic_stats <- data.frame(
+  mean = mean(wildfire_data$SIZE_HA, na.rm = TRUE),
+  sd = sd(wildfire_data$SIZE_HA, na.rm = TRUE),
+  median = median(wildfire_data$SIZE_HA, na.rm = TRUE),
+  mode = as.numeric(names(sort(table(wildfire_data$SIZE_HA), decreasing = TRUE)[1]))  # Most Frequent Value
+)
+
+# Calculate table 2 stats
+advanced_stats <- data.frame(
+  skewness = skewness(wildfire_data$SIZE_HA, na.rm = TRUE),
+  kurtosis = kurtosis(wildfire_data$SIZE_HA, na.rm = TRUE),
+  CoV = sd(wildfire_data$SIZE_HA, na.rm = TRUE) / mean(wildfire_data$SIZE_HA, na.rm = TRUE),
+  normality = shapiro.test(wildfire_data$SIZE_HA[1:5000])$p.value  # Shapiro-Wilk Normality Test
+)
+
+# Print stats
+print(basic_stats)
+print(advanced_stats)
+
+# Table 1 image
+basic_table <- basic_stats %>%
+  gt() %>%
+  tab_header(
+    title = "Table 1: Descriptive Statistics for Wildfire Size (Ha)",
+    subtitle = "Summary of wildfire sizes in BC"
+  ) %>%
+  cols_label(
+    mean = "Mean",
+    sd = "SD",
+    median = "Median",
+    mode = "Mode"
+  ) %>%
+  fmt_number(columns = everything(), decimals = 2) %>%
+  tab_options(
+    table.width = px(600)
+  )
+
+# Table 2 image
+advanced_table <- advanced_stats %>%
+  gt() %>%
+  tab_header(
+    title = "Table 2: Additional Statistics for Wildfire Size (Ha)",
+    subtitle = "Distribution properties of wildfire sizes in BC"
+  ) %>%
+  cols_label(
+    skewness = "Skewness",
+    kurtosis = "Kurtosis",
+    CoV = "CoV",
+    normality = "Normality"
+  ) %>%
+  fmt_number(columns = everything(), decimals = 2) %>%
+  tab_options(
+    table.width = px(600)
+  )
+
+# Print Tables
+print(basic_table)
+print(advanced_table)
+```
+We can now interpret our output tables to look for trends within the size of the fires. The mean size of the fires is 640 Ha but we can tell this heavily skewed by larger fires. We know this because the standard deviation of 13 231 Ha indicates very high variability in the size of the fires, this means there are lots of fires either much smaller or larger than the mean. The median being only .1 Ha tells us the majority of wildfires are quite small and are contained or die before they spread. Lastly for our basic statistics the mode is only .01 Ha which also indicates the majority of fires are very small. When considering the skew the value of 34 is highly positive and a small amount of large fires a right skew. The kurtosis value of 1305 is exceptionally high, this tells us most values are near 0 but the outliers are huge. The coefficient of variation  of 20 tells us that the size varies greatly fire to fire. Lastly a normality gives us our p value of 0 which means our size distribution is not normal and heavily skewed.
+
+![Descriptive Statistics on Wildfire Size](https://github.com/JColalillo/Spatial-Analysis-Final/blob/main/WildfireTable1.png?raw=true)
+![Descriptive Statistics on Wildfire Size](https://github.com/JColalillo/Spatial-Analysis-Final/blob/main/WildfireTable2.png?raw=true)
+
+#Mapping Our Fire Events
+In this section we will map our wildfire events so we can see their distribution across the province. As you can see from the map below the entire province is subject to risk of wildfire but there is a higher frequency as you move east in the province.
+```
+# Load Wildfire Points Data
+C_FIRE_PNT_point <- st_read("C_FIRE_PNT_point.shp")  
+
+# Load BC boundary using bcmaps
+bc_boundary <- bc_bound()  
+
+# checks for CRS Consistency (Albers Projection)
+target_crs <- 3005  
+
+# Changes CRS as necessary
+if (st_crs(C_FIRE_PNT_point) != target_crs) {
+  C_FIRE_PNT_point <- st_transform(C_FIRE_PNT_point, crs = target_crs)
+}
+if (st_crs(bc_boundary) != target_crs) {
+  bc_boundary <- st_transform(bc_boundary, crs = target_crs)
+}
+
+# Creates Map
+fire_points_map <- ggplot() +
+  geom_sf(data = bc_boundary, fill = NA, color = "white", linewidth = 1) +  # BC boundary in white for contrast
+  geom_sf(data = C_FIRE_PNT_point, color = "red", size = 0.7, alpha = 0.8) +  # Fire points with improved visibility
+  theme_minimal(base_size = 14) +  # Increase base font size
+  labs(
+    title = "Wildfire Locations in British Columbia During 2024",
+    x = "Longitude",
+    y = "Latitude"
+  ) +
+  theme(
+    plot.background = element_rect(fill = "black"),  # Set background to black
+    panel.background = element_rect(fill = "black"),  # Darken panel
+    plot.title = element_text(face = "bold", size = 16, color = "white"),  # Title in white
+    axis.title = element_text(size = 12, color = "white"),  # Axis labels in white
+    axis.text = element_text(size = 10, color = "white"),  # Axis text in white
+    panel.grid.major = element_line(color = "gray40", size = 0.3)  # Adjust gridlines for readability
+  )
+
+# Save Fire Points Map
+ggsave("Fire_Points_Map_Improved.png", plot = fire_points_map, width = 10, height = 8, dpi = 300)
+```
+![Wildfire Locations 2024](https://github.com/JColalillo/Spatial-Analysis-Final/blob/main/Fire_Points_Map_Improved.png?raw=true)
+
