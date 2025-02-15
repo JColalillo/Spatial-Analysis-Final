@@ -152,11 +152,11 @@ if (!is.null(snow_depth_data)) {
 }
 ```
 # Mapping Climate Data
-Now we will map our newly aggregated snow depth data so we can see the stations average seasonal snow depth. This This code will set a boundary, load the data, clip it, check for errors that may cause issue and then generate a map with customizations for legibility. Lastly it will save the map as an output. 
+Now we will map our newly aggregated snow depth data so we can see the stations average seasonal snow depth. This This code will set a boundary, load the data, clip it, check for errors that may cause issue and then generate a map with customizations for legibility. Lastly it will save the map as an output. To create our map we define the BC boundary shpaefile as the study area and make sure it is in the crs albers projection. Once we've verified our projections are consistent we clip the data and remove any 'broken points' outside the province. The dots on the map will be color coded to reference their average seasonal snow depth.
 
 ![Snow Depth Map](https://github.com/JColalillo/Spatial-Analysis-Final/blob/main/Snow_Depth_Points_Map_Fixed.png?raw=true)
 
-Now that we have those mapped out we can begin our analysis through Inverse Distance Weighted Interpolation. This is a spatial interpolation technique which can estimate the values across the entire province by using the data at the points of each station. It assumes closer points will have a greater effect on the prediction than those further away. The weighting of each point will decrease as the distance to an unknown area grows. IDW is calculated by using a weighted average of close points using this equation
+Now that we have those mapped out we can begin our analysis through Inverse Distance Weighted Interpolation. This is a spatial interpolation technique which can estimate the values across the entire province by using the data at the points of each station. It assumes closer points will have a greater effect on the prediction than those further away. The weighting of each point will decrease as the distance to an unknown area grows. IDW is calculated by using a weighted average of close points using this equation. In this case a 10km grid resolution was used, then we applied the IDW algorithm and generated a raster map where values can be assigned to each cell in the grid. 
 
 ![IDW Equation](https://github.com/user-attachments/assets/2a05ac2b-fb49-444d-b08a-d67511228506)
 
