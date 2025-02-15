@@ -593,3 +593,62 @@ ggsave("Wildfire_KDE_Map_Fixed_Scale.png", plot = kde_plot, width = 12, height =
 print(kde_plot)
 ```
 ![Wildfire KDE of British Columbia 2024](https://github.com/JColalillo/Spatial-Analysis-Final/blob/main/Wildfire_KDE_Map_Fixed_Scale.png?raw=true)
+
+# Ordinary Least Squares Regression (OLS)
+OLS allows us to to see any intiial indication of a relationship between snow depth and fire density. It will also let us know if further modelling such as geographical weighted regression (GWR) is necessary. OLS allows to measure how changes in snow depth (our independent variable) affect our wildfire density (dependent variable). It uses the following equation 
+![OLS Equation](https://github.com/JColalillo/Spatial-Analysis-Final/blob/main/OLSEQ.png?raw=true)
+To interpret our results a negative coefficient indicates higher snow depth results in lower wildfire density and a positive coefficient meaning more snow would lead to more fires. The R value if closer to 1 indicates a stronger relationship and 0 indicates little to no correlation. lastly the P-value tests for significance and a value under 0.05 would indicate this is the case.
+We can complete our OLS with the following code
+```
+#Load Data
+final_data_sf <- st_read("final_data_with_residuals.shp")
+bc_boundary <- bc_bound()  # Load BC boundary from bcmaps
+
+#Check CRS
+target_crs <- 3005  # BC Albers Projection
+if (st_crs(final_data_sf) != target_crs) {
+  final_data_sf <- st_transform(final_data_sf, crs = target_crs)
+}
+if (st_crs(bc_boundary) != target_crs) {
+  bc_boundary <- st_transform(bc_boundary, crs = target_crs)
+}
+
+# Define Breaks for Legend
+residual_range <- range(final_data_sf$residuals, na.rm = TRUE)
+residual_breaks <- seq(residual_range[1], residual_range[2], length.out = 5)  # Generate 5 breaks
+residual_labels <- c("Strong Underprediction", "Slight Underprediction", "Neutral", "Slight Overprediction", "Strong Overprediction")
+
+# Create Residuals Map
+residuals_map <- ggplot() +
+  geom_sf(data = final_data_sf, aes(fill = residuals), color = NA) +  # Rasterized residuals
+  geom_sf(data = bc_boundary, fill = NA, color = "white", linewidth = 1.2) +  # Overlay BC boundary
+  scale_fill_viridis_c(
+    option = "plasma",
+    name = "Residuals (Fire Density - Predicted)",
+    breaks = residual_breaks, 
+    labels = residual_labels
+  ) +
+  theme_minimal(base_family = "Arial") +  #font
+  labs(
+    title = "Residuals from OLS Regression: Snow Depth vs. Fire Density",
+    subtitle = "Negative = Model Underpredicted, Positive = Model Overpredicted",
+    x = "Longitude",
+    y = "Latitude"
+  ) +
+  theme(
+    legend.position = "right",
+    plot.title = element_text(face = "bold", size = 16, color = "white"),  # Title
+    plot.subtitle = element_text(size = 12, color = "white"),  # Subtitle
+    axis.title = element_text(size = 12, color = "white"),  # Axis labels
+    axis.text = element_text(size = 10, color = "white"),  # Axis text
+    legend.text = element_text(size = 10, color = "white"),  # Legend text
+    legend.title = element_text(size = 12, face = "bold", color = "white"),  # Legend title
+    panel.background = element_rect(fill = "black"),  # Background
+    plot.background = element_rect(fill = "black")  # Set full plot background
+  )
+
+# Save the Residuals Map
+ggsave("Residuals_Map.png", plot = residuals_map, width = 10, height = 8, dpi = 300, bg = "black")
+```
+Now lets interpret the results of our output. 
+
