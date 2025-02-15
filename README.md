@@ -506,7 +506,7 @@ The code will print our results in a table. As you can see our Observed NN dista
 
 ![Nearest Neighbor Data](https://github.com/JColalillo/Spatial-Analysis-Final/blob/main/NearestNeighborWildfire.png?raw=true)
 
-# Descriptive Statistics Using Kernel Density Estimates (KDE)
+# Descriptive Spatial Statistics Using Kernel Density Estimates (KDE)
 In this section we will complete descriptive statistics using KDE. KDE creates a surface that highlights areas of higher or lower concentration of event occurences, in this case wildfires. It estimates the probability of density of a dataset and visualizes it on a continous surface instead of points. It gives higher values to area with more events
 and uses a bandwidth to determine a radius of how far to smooth the values. The scale on this map shows relative density. As you can see the South East of the province has the highest density of fires but there are other notable clusters around the province. We can also note that the northern areas of the province have significantly lower fire density. 
 
@@ -863,9 +863,11 @@ Now lets look at our outputs, we have produced both a table and a map. When exam
 
 ![GWR Map](https://github.com/JColalillo/Spatial-Analysis-Final/blob/main/GWR_Map.png?raw=true)
 
-# Shortcomings of the study
+# Methods Critiqued
 
 While this study is a useful tool to learn how to conduct spatial analysis in R the project itself did have shortcomings. Only using 1 variable to look for correlation of an event like wildfires is not sufficient. There are too many factors at play when determining wildfire density and by not incorporating other climate data, population density, average number of lightning storms and much more we cannot paint a complete picture to predict future wildfires. Another issue with our study was due to difficulties with PCIC website we were only able to acquire data from a single year and from the BC Hydro weather stations. These stations are quite clustered and do not cover the entirety of the province. Therefore it is hard to complete accurate continous surface's of the climate data across the province when its being extrapolated upon from very localized areas.
 
+# Conclusion
 
+The user of this tutorial learned about different types of spatial analysis and how to input their own climate variables to model for wildfire predictors. Unfortunately it does appear that we have uncovered a hidden perfect way to predict wildfires. But is important that we continue using spatial analyses combining more techniques and variables. If done properly we can look to predict and prevent future fire events in the provinces and save both lives and communities from destruction. To remind the user in this tutorial we have learned how to clean, filter and aggregate data, map points, calculate, map and interpret inverse distance weighting, descriptive statistics, conduct point pattern analyses via nearest neighbour, descriptive spatial statistics via Kernel Density Estimates, ordinary least squares regression and test it using Morans I to check its global validity and lastly geographical weighted recession modelling to look for local trends. 
 
