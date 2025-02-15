@@ -394,3 +394,202 @@ ggsave("Fire_Points_Map_Improved.png", plot = fire_points_map, width = 10, heigh
 ```
 ![Wildfire Locations 2024](https://github.com/JColalillo/Spatial-Analysis-Final/blob/main/Fire_Points_Map_Improved.png?raw=true)
 
+# Point Pattern Analysis Using Nearest Neighbor
+In this section of code we will conduct a point pattern analysis on our wildfire locations using nearest neighbour analysis. This analysis will tell us about the type of distribution of the wildfire events, they can be random, clustered or dispersed in distribution.
+```
+# Load Wildfire Data
+wildfire_shapefile <- "C_FIRE_PNT_point.shp"
+wildfire_data <- st_read(wildfire_shapefile)
+
+# Load BC Boundary
+bc_boundary_shapefile <- "C:/Users/admin/Desktop/Project/FinalProject/BCShape.shp"
+bc_boundary <- st_read(bc_boundary_shapefile)
+
+# Check CRS 
+target_crs <- 3005
+if (st_crs(wildfire_data) != st_crs(target_crs)) {
+  wildfire_data <- st_transform(wildfire_data, crs = target_crs)
+}
+if (st_crs(bc_boundary) != st_crs(target_crs)) {
+  bc_boundary <- st_transform(bc_boundary, crs = target_crs)
+}
+
+# Extract wildfire coordinates
+wildfire_coords <- st_coordinates(wildfire_data)
+
+# calculate NND
+nearest_neighbors <- nngeo::st_nn(wildfire_data, wildfire_data, k = 2, progress = FALSE)
+
+# Get 1st NND
+nearest_distances <- sapply(nearest_neighbors, function(x) {
+  if (length(x) > 1) {
+    st_distance(wildfire_data[x[1], ], wildfire_data[x[2], ])
+  } else {
+    NA
+  }
+})
+
+# Convert to DataFrame
+wildfire_nn_stats <- data.frame(
+  Fire_ID = wildfire_data$FIRE_ID,
+  Nearest_Neighbor_Distance = as.numeric(nearest_distances)
+)
+
+# Calculate Summ stats
+nn_summary <- data.frame(
+  Mean_NN = mean(wildfire_nn_stats$Nearest_Neighbor_Distance, na.rm = TRUE),
+  Median_NN = median(wildfire_nn_stats$Nearest_Neighbor_Distance, na.rm = TRUE),
+  Min_NN = min(wildfire_nn_stats$Nearest_Neighbor_Distance, na.rm = TRUE),
+  Max_NN = max(wildfire_nn_stats$Nearest_Neighbor_Distance, na.rm = TRUE),
+  SD_NN = sd(wildfire_nn_stats$Nearest_Neighbor_Distance, na.rm = TRUE)
+)
+
+print(nn_summary)
+
+# Makes a histogram of NND
+nn_plot <- ggplot(wildfire_nn_stats, aes(x = Nearest_Neighbor_Distance)) +
+  geom_histogram(bins = 30, fill = "blue", color = "black", alpha = 0.7) +
+  labs(title = "Nearest Neighbor Distances of Wildfires",
+       x = "Distance (meters)",
+       y = "Frequency") +
+  theme_minimal()
+
+# Save the histogram
+ggsave("Wildfire_Nearest_Neighbor_Histogram.png", plot = nn_plot, width = 10, height = 8, dpi = 300)
+
+# Calculate NNI
+observed_nn <- mean(wildfire_nn_stats$Nearest_Neighbor_Distance, na.rm = TRUE)
+area_bc <- as.numeric(st_area(bc_boundary))
+num_fires <- nrow(wildfire_data)
+expected_nn <- 1 / (2 * sqrt(num_fires / area_bc))
+nn_index <- observed_nn / expected_nn  
+
+# Calculate Z-Score
+z_score <- (observed_nn - expected_nn) / (0.26136 / sqrt(num_fires))
+
+# Determine Spatial Pattern
+spatial_pattern <- ifelse(nn_index < 1, "Clustered",
+                          ifelse(nn_index > 1, "Dispersed", "Random"))
+
+# Create NN summary Table
+nn_table <- data.frame(
+  Observed_Distance = observed_nn,
+  Expected_Distance = expected_nn,
+  NN_Index = nn_index,
+  Z_Score = z_score,
+  Pattern = spatial_pattern
+)
+
+# Display Table
+nn_table %>%
+  gt() %>%
+  tab_header(
+    title = "Nearest Neighbor Summary for Wildfires",
+    subtitle = "Analysis of Wildfire Spatial Distribution"
+  ) %>%
+  fmt_number(columns = c(Observed_Distance, Expected_Distance, NN_Index, Z_Score), decimals = 2) %>%
+  cols_label(
+    Observed_Distance = "Observed NN Distance (m)",
+    Expected_Distance = "Expected NN Distance (m)",
+    NN_Index = "Clark & Evans Index",
+    Z_Score = "Z-Score",
+    Pattern = "Spatial Pattern"
+  ) %>%
+  tab_options(
+    table.width = px(600)
+  )
+```
+The code will print our results in a table. As you can see our Observed NN distance is 7503 which tells us the average distance between each fire is 7503 meters. The value of for 11 666 for expected NN distance tells us if the fires were random  then the expected average distance between them would be 11 666m. lastly our Nearest Neighbour Index value (C&E Index) is .64 we interpret this as clustered. a value = 1 would be random, less than 1 clustered and above 1 dispersed. A value of .64 tells us the fires are very clustered by nature. Lastly our very negative z score of -653 756 tells us that this did not occur by accident.
+
+![Nearest Neighbor Data](https://github.com/JColalillo/Spatial-Analysis-Final/blob/main/NearestNeighborWildfire.png?raw=true)
+
+# Descriptive Statistics Using Kernel Density Estimates (KDE)
+In this section we will complete descriptive statistics using KDE. KDE creates a surface that highlights areas of higher or lower concentration of event occurences, in this case wildfires. It estimates the probability of density of a dataset and visualizes it on a continous surface instead of points. It gives higher values to area with more events
+and uses a bandwidth to determine a radius of how far to smooth the values. The scale on this map shows relative density. As you can see the South East of the province has the highest density of fires but there are other notable clusters around the province. We can also note that the northern areas of the province have significantly lower fire density. 
+
+```
+# Load Wildfire Data
+wildfire_shapefile <- "C_FIRE_PNT_point.shp"
+wildfire_data <- st_read(wildfire_shapefile)
+
+# Load BC Boundary
+bc_boundary_shapefile <- "BC_Boundary.shp"
+bc_boundary <- st_read(bc_boundary_shapefile)
+
+# Ensure Correct CRS (BC Albers Projection)
+target_crs <- 3005
+
+if (st_crs(wildfire_data) != target_crs) {
+  wildfire_data <- st_transform(wildfire_data, crs = target_crs)
+}
+
+if (st_crs(bc_boundary) != target_crs) {
+  bc_boundary <- st_transform(bc_boundary, crs = target_crs)
+}
+
+# Extract wildfire coordinates
+wildfire_coords <- st_coordinates(wildfire_data)
+
+# Calculate Kernel Density Estimate (KDE)
+bbox <- st_bbox(bc_boundary)
+
+kde_result <- kde2d(
+  x = wildfire_coords[, 1], 
+  y = wildfire_coords[, 2], 
+  n = 200,  # Higher resolution for better visualization
+  lims = c(bbox["xmin"], bbox["xmax"], bbox["ymin"], bbox["ymax"])
+)
+
+# Convert KDE result to raster
+kde_raster <- raster(kde_result)
+crs(kde_raster) <- st_crs(target_crs)$proj4string
+
+# Clip KDE raster to BC boundary
+kde_raster_clipped <- mask(crop(kde_raster, bc_boundary), bc_boundary)
+
+# Normalize KDE for better visualization
+kde_raster_clipped <- calc(kde_raster_clipped, function(x) x / max(x, na.rm = TRUE))
+
+# Convert raster to dataframe for plotting
+kde_df <- as.data.frame(rasterToPoints(kde_raster_clipped))
+colnames(kde_df) <- c("x", "y", "density")
+
+# Create KDE Map with Fixed Scale Bar
+kde_plot <- ggplot() +
+  geom_raster(data = kde_df, aes(x = x, y = y, fill = density), alpha = 0.85) +  # Adjust alpha for better contrast
+  geom_sf(data = bc_boundary, fill = NA, color = "white", linewidth = 1.5) +  # Thicker boundary for visibility
+  scale_fill_viridis_c(
+    name = "Wildfire Density",
+    option = "magma",  # Higher contrast color scale
+    breaks = scales::pretty_breaks(n = 5),  # Ensures evenly spaced values
+    guide = guide_colorbar(barwidth = 12, barheight = 0.8)  # Adjusts scale bar size
+  ) +
+  labs(
+    title = "Wildfire Density in British Columbia",
+    subtitle = "Kernel Density Estimation (KDE)",
+    x = "Longitude",
+    y = "Latitude"
+  ) +
+  theme_minimal(base_size = 16) +  # Increase text size for readability
+  theme(
+    legend.position = "bottom",
+    legend.key.width = unit(2, "cm"),  # Makes legend bar wider
+    legend.key.height = unit(0.5, "cm"),  # Reduces height
+    legend.text = element_text(size = 12, color = "white"),  # Larger legend labels
+    legend.title = element_text(size = 14, face = "bold", color = "white"),  
+    plot.title = element_text(face = "bold", size = 18, color = "white"),
+    plot.subtitle = element_text(size = 14, color = "white"),
+    axis.title = element_text(size = 14, color = "white"),
+    axis.text = element_text(size = 12, color = "white"),
+    plot.background = element_rect(fill = "black"),  
+    panel.background = element_rect(fill = "black"),
+    panel.grid.major = element_line(color = "gray40", size = 0.3)
+  )
+
+# Save the improved KDE map
+ggsave("Wildfire_KDE_Map_Fixed_Scale.png", plot = kde_plot, width = 12, height = 8, dpi = 300)
+
+# Display KDE plot
+print(kde_plot)
+```
+![Wildfire KDE of British Columbia 2024](https://github.com/JColalillo/Spatial-Analysis-Final/blob/main/Wildfire_KDE_Map_Fixed_Scale.png?raw=true)
