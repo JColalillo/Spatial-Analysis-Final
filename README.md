@@ -872,3 +872,14 @@ While this study is a useful tool to learn how to conduct spatial analysis in R 
 
 The user of this tutorial learned about different types of spatial analysis and how to input their own climate variables to model for wildfire predictors. Unfortunately it does appear that we have uncovered a hidden perfect way to predict wildfires. But is important that we continue using spatial analyses combining more techniques and variables. If done properly we can look to predict and prevent future fire events in the provinces and save both lives and communities from destruction. To remind the user in this tutorial we have learned how to clean, filter and aggregate data, map points, calculate, map and interpret inverse distance weighting, descriptive statistics, conduct point pattern analyses via nearest neighbour, descriptive spatial statistics via Kernel Density Estimates, ordinary least squares regression and test it using Morans I to check its global validity and lastly geographical weighted recession modelling to look for local trends. 
 
+# References
+
+2023 is now officially the most expensive, most destructive wildfire season on record in B.C. (2023, September 27). Retrieved from CBC website: https://www.cbc.ca/news/canada/british-columbia/wildfire-danger-reducing-1.6980041
+
+Holden, Z. A., Swanson, A., Luce, C. H., & Jolly, W. M. (2018). Decreasing fire season precipitation increased recent western US forest wildfire activity. Proceedings of the National Academy of Sciences, 115(36), E8349-E8357.
+
+Vernick, D. (2025, January 14). Is climate change increasing the risk of disasters? Retrieved from World Wildlife Fund website: https://www.worldwildlife.org/stories/is-climate-change-increasing-the-risk-of-disasters?utm_source=chatgpt.com
+
+Westerling, A. L., Hidalgo, H. G., Cayan, D. R., & Swetnam, T. W. (2006). Warming and earlier spring increase western US forest wildfire activity. Science, 313(5789), 940-943.
+
+
