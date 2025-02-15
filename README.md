@@ -152,5 +152,4 @@ if (!is.null(snow_depth_data)) {
 # Mapping Climate Data
 Now we will map our newly aggregated snow depth data so we can see the stations average seasonal snow depth. This This code will set a boundary, load the data, clip it, check for errors that may cause issue and then generate a map with customizations for legibility. Lastly it will save the map as an output. 
 ```
-
-```![Snow_Depth_Points_Map_Fixed](https://github.com/user-attachments/assets/7ee31eef-351d-4e93-9393-59d14f6e1c19)
+![Snow Depth Map](https://github.com/JColalillo/Spatial-Analysis-Final/blob/main/Snow_Depth_Points_Map_Fixed.png?raw=true)
